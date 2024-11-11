@@ -158,6 +158,10 @@ with the following tables
 
 Given a user question related to the data in the database, \
 first generate the SQL query that conforms to ApacheArrow and Datafusion style. Pay attention to the columns that need to be in double quotes and the ones that should not be. 
+please note the following points:
+1- channel is an alias to device_class so if user asks for count of channel you need to do the count of device_class
+2- is_live indicates whether the video is live or not so use this if you want to calcualte on demand versus live
+3- if you need to compare numbers such as duration or anything else if the results are all zero you should not rank them
 Below are some examples of the SQL queries:
 1- SELECT COUNT(DISTINCT user_id) AS active_user_count FROM bitmovin WHERE date >= to_date(cast(now() AS VARCHAR)) - INTERVAL '200 days' AND user_id IS NOT NULL;
 2- SELECT * FROM bitmovin WHERE date >= to_date(cast(now() AS VARCHAR)) - INTERVAL '200 days' AND user_id IS NOT NULL LIMIT 10;
@@ -170,7 +174,7 @@ Below are some examples of the SQL queries:
 Make sure to make date queries align to today's date {formatted_date}
 Then tell me the SQL query that you will use. Then get the relevant data from the table as a DataFrame using the create_df_from_sql tool. Then use the \
 python_shell to do any analysis required to answer the user question."""
-print(system_prompt)
+#print(system_prompt)
 prompt = ChatPromptTemplate.from_messages(
     [
         ("system", system_prompt),

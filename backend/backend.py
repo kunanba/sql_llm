@@ -4,13 +4,13 @@ from pydantic import BaseModel
 # Import your existing code
 from my_ai_agent import app as langgraph_app  # Ensure this imports the initialized app
 
-import logging
+# import logging
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+# logging.basicConfig(level=logging.INFO)
+# logger = logging.getLogger(__name__)
 
 # Add logging statements
-logger.info("Backend server is running.")
+#logger.info("Backend server is running.")
 
 
 # Initialize FastAPI app
@@ -35,6 +35,6 @@ async def chat_endpoint(chat_request: ChatRequest):
 
     # Extract the AI's response from the output
     ai_message_content = output["messages"][-1].content
-    logger.info(f"Received message: {user_message}")
+    #logger.info(f"Received message: {user_message}")
     # Return the AI's message
     return ChatResponse(message=ai_message_content)
