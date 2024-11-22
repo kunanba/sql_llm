@@ -3,9 +3,11 @@
 import streamlit as st
 import requests
 import uuid
+import base64
+from io import BytesIO
 
 # Set the FastAPI backend URL
-BACKEND_URL = "http://localhost:8001/chat"
+BACKEND_URL = "http://localhost:8000/chat"
 
 # Initialize session state
 if "messages" not in st.session_state:
@@ -16,9 +18,14 @@ if "session_id" not in st.session_state:
 st.title("AI Assistant Chat")
 
 # Display chat messages from history on app rerun
+# Display chat messages from history on app rerun
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
+        # Display images if any
+        for image_base64 in message.get("images", []):
+            image_bytes = base64.b64decode(image_base64)
+            st.image(image_bytes)
 
 # Accept user input
 if prompt := st.chat_input("Ask a question"):
@@ -26,8 +33,6 @@ if prompt := st.chat_input("Ask a question"):
     with st.chat_message("user"):
         st.markdown(prompt)
     # Add user message to chat history
-    st.session_state.messages.append({"role": "user", "content": prompt})
-
     # Send the message to the backend
     session_id = st.session_state.session_id
     response = requests.post(
@@ -36,9 +41,18 @@ if prompt := st.chat_input("Ask a question"):
     )
     response_json = response.json()
     ai_message = response_json["message"]
+    images = response_json.get("images", [])
 
     # Display assistant response in chat message container
     with st.chat_message("assistant"):
         st.markdown(ai_message)
+        # Display images if any
+        for image_base64 in images:
+            image_bytes = base64.b64decode(image_base64)
+            st.image(image_bytes)
     # Add assistant response to chat history
-    st.session_state.messages.append({"role": "assistant", "content": ai_message})
+    st.session_state.messages.append({
+        "role": "assistant",
+        "content": ai_message,
+        "images": images
+    })

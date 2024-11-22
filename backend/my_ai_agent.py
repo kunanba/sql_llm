@@ -29,10 +29,6 @@ import requests
 
 
 
-
-
-
-
 # Load environment variables from .env file
 load_dotenv()
 
@@ -158,10 +154,11 @@ with the following tables
 
 Given a user question related to the data in the database, \
 first generate the SQL query that conforms to ApacheArrow and Datafusion style. Pay attention to the columns that need to be in double quotes and the ones that should not be. 
-please note the following points:
+please pay close attention to the following points:
 1- channel is an alias to device_class so if user asks for count of channel you need to do the count of device_class
 2- is_live indicates whether the video is live or not so use this if you want to calcualte on demand versus live
 3- if you need to compare numbers such as duration or anything else if the results are all zero you should not rank them
+4- the format of the date is like 20240703 so you might need to do some formatting to get the date in the right format
 Below are some examples of the SQL queries:
 1- SELECT COUNT(DISTINCT user_id) AS active_user_count FROM bitmovin WHERE date >= to_date(cast(now() AS VARCHAR)) - INTERVAL '200 days' AND user_id IS NOT NULL;
 2- SELECT * FROM bitmovin WHERE date >= to_date(cast(now() AS VARCHAR)) - INTERVAL '200 days' AND user_id IS NOT NULL LIMIT 10;
@@ -173,7 +170,7 @@ Below are some examples of the SQL queries:
 
 Make sure to make date queries align to today's date {formatted_date}
 Then tell me the SQL query that you will use. Then get the relevant data from the table as a DataFrame using the create_df_from_sql tool. Then use the \
-python_shell to do any analysis required to answer the user question."""
+python_shell to do any analysis required to answer the user question and always generate charts with seaborn always."""
 #print(system_prompt)
 prompt = ChatPromptTemplate.from_messages(
     [
@@ -279,17 +276,36 @@ def _upload_dfs_to_repl(state: AgentState) -> str:
     )
     return df_code
 
-def _repl_result_to_msg_content(repl_result: dict) -> str:
-    """Convert REPL results to message content."""
+# def _repl_result_to_msg_content(repl_result: dict) -> str:
+#     """Convert REPL results to message content."""
+#     content = {}
+#     for k, v in repl_result.items():
+#         if isinstance(repl_result[k], dict) and repl_result[k]["type"] == "image":
+#             base64_str = repl_result[k]["base64_data"]
+#             img = Image.open(io.BytesIO(base64.decodebytes(bytes(base64_str, "utf-8"))))
+#             display(img)
+#         else:
+#             content[k] = repl_result[k]
+#     return json.dumps(content, indent=2)
+
+# # Add import statements at the top if not already present
+
+
+import base64
+from typing import Tuple, List
+
+def _repl_result_to_msg_content(repl_result: dict) -> Tuple[str, List[str]]:
+    """Convert REPL results to message content and collect images."""
     content = {}
+    images = []
     for k, v in repl_result.items():
-        if isinstance(repl_result[k], dict) and repl_result[k]["type"] == "image":
-            base64_str = repl_result[k]["base64_data"]
-            img = Image.open(io.BytesIO(base64.decodebytes(bytes(base64_str, "utf-8"))))
-            display(img)
+        if isinstance(v, dict) and v.get("type") == "image":
+            base64_str = v["base64_data"]
+            images.append(base64_str)
         else:
-            content[k] = repl_result[k]
-    return json.dumps(content, indent=2)
+            content[k] = v
+    return json.dumps(content, indent=2), images
+
 
 def execute_python(state: AgentState) -> dict:
     """Execute the latest generated Python code."""
